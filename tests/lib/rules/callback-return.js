@@ -148,6 +148,39 @@ ruleTester.run("callback-return", rule, {
             options: [["obj.method"]]
         },
 
+        // allow callbacks without return at end of IfStatements if they are the last thing in the block
+        {
+            code: "function a(err) { if (err) { callback(err); } }"
+        },
+        {
+            code: "function a(err) { var a = 1; if (err) { callback(err); } }"
+        },
+        {
+            code: "function a(b) { var a; if (b) { doSomething() } else { callback(); } }"
+        },
+        {
+            code: "function a(err) { if (err) { callback(err); } else { callback2(); } }",
+            options: [["callback", "callback2"]]
+        },
+        {
+            code: "function a(err) { if (err) { var a = 1; callback(err); } else { callback2(); } }",
+            options: [["callback", "callback2"]]
+        },
+        {
+            code: "function a(err) { if (err) { return callback(err); } else { return callback2(); } }",
+            options: [["callback", "callback2"]]
+        },
+        {
+            code: "function x(err) { if (err) { callback() } else { callback() } }"
+        },
+        {
+            code: "function x(err) { if (err) return callback(); else callback(); }"
+        },
+        {
+            code: "() => { if (x) { callback(); } }",
+            parserOptions: { ecmaVersion: 6 }
+        },
+
         //  known bad examples that we know we are ignoring
         "function x(err) { if (err) { setTimeout(callback, 0); } callback(); }", // callback() called twice
         "function x(err) { if (err) { process.nextTick(function(err) { callback(); }); } callback(); }" // callback() called twice
@@ -155,77 +188,11 @@ ruleTester.run("callback-return", rule, {
     ],
     invalid: [
         {
-            code: "function a(err) { if (err) { callback (err); } }",
-            errors: [{
-                message: "Expected return with your callback function.",
-                line: 1,
-                column: 30,
-                nodeType: "CallExpression"
-            }]
-        },
-        {
-            code: "function a(callback) { if (typeof callback !== 'undefined') { callback(); } }",
-            errors: [{
-                message: "Expected return with your callback function.",
-                line: 1,
-                column: 63,
-                nodeType: "CallExpression"
-            }]
-        },
-        {
-            code: "function a(callback) { if (typeof callback !== 'undefined') callback();  }",
-            errors: [{
-                message: "Expected return with your callback function.",
-                line: 1,
-                column: 61,
-                nodeType: "CallExpression"
-            }]
-        },
-        {
             code: "function a(callback) { if (err) { callback(); horse && horse(); } }",
             errors: [{
                 message: "Expected return with your callback function.",
                 line: 1,
                 column: 35,
-                nodeType: "CallExpression"
-            }]
-        },
-        {
-            code: "var x = (err) => { if (err) { callback (err); } }",
-            parserOptions: { ecmaVersion: 6 },
-            errors: [{
-                message: "Expected return with your callback function.",
-                line: 1,
-                column: 31,
-                nodeType: "CallExpression"
-            }]
-        },
-        {
-            code: "var x = { x(err) { if (err) { callback (err); } } }",
-            parserOptions: { ecmaVersion: 6 },
-            errors: [{
-                message: "Expected return with your callback function.",
-                line: 1,
-                column: 31,
-                nodeType: "CallExpression"
-            }]
-        },
-        {
-            code: "function x(err) { if (err) {\n log();\n callback(err); } }",
-            errors: [{
-                message: "Expected return with your callback function.",
-                line: 3,
-                column: 2,
-                nodeType: "CallExpression"
-            }]
-        },
-        {
-            code: "var x = { x(err) { if (err) { callback && callback (err); } } }",
-            parserOptions: { ecmaVersion: 6 },
-            errors: [{
-                message: "Expected return with your callback function.",
-                line: 1,
-                column: 43,
                 nodeType: "CallExpression"
             }]
         },
@@ -267,15 +234,6 @@ ruleTester.run("callback-return", rule, {
             }]
         },
         {
-            code: "function a(err) { if (err) { callback (err); } else if (x) { callback(err); return; } }",
-            errors: [{
-                message: "Expected return with your callback function.",
-                line: 1,
-                column: 30,
-                nodeType: "CallExpression"
-            }]
-        },
-        {
             code: "function x(err) { if (err) { return callback(); }\nelse if (abc) {\ncallback(); }\nelse {\nreturn callback(); } }",
             errors: [{
                 message: "Expected return with your callback function.",
@@ -298,43 +256,6 @@ ruleTester.run("callback-return", rule, {
 
 
         // generally good behavior which we must not allow to keep the rule simple
-        {
-            code: "function x(err) { if (err) { callback() } else { callback() } }",
-            errors: [{
-                message: "Expected return with your callback function.",
-                line: 1,
-                column: 30,
-                nodeType: "CallExpression"
-            }, {
-                message: "Expected return with your callback function.",
-                line: 1,
-                column: 50,
-                nodeType: "CallExpression"
-            }]
-        },
-        {
-            code: "function x(err) { if (err) return callback(); else callback(); }",
-            errors: [
-                {
-                    message: "Expected return with your callback function.",
-                    line: 1,
-                    column: 52,
-                    nodeType: "CallExpression"
-                }
-            ]
-        },
-        {
-            code: "() => { if (x) { callback(); } }",
-            parserOptions: { ecmaVersion: 6 },
-            errors: [
-                {
-                    message: "Expected return with your callback function.",
-                    line: 1,
-                    column: 18,
-                    nodeType: "CallExpression"
-                }
-            ]
-        },
         {
             code: "function b() { switch(x) { case 'horse': callback(); } }",
             errors: [
@@ -397,30 +318,6 @@ ruleTester.run("callback-return", rule, {
             ]
         },
         {
-            code: "function a(err) { if (err) { obj.method(err); } }",
-            options: [["obj.method"]],
-            errors: [
-                {
-                    message: "Expected return with your callback function.",
-                    line: 1,
-                    column: 30,
-                    nodeType: "CallExpression"
-                }
-            ]
-        },
-        {
-            code: "function a(err) { if (err) { obj.prop.method(err); } }",
-            options: [["obj.prop.method"]],
-            errors: [
-                {
-                    message: "Expected return with your callback function.",
-                    line: 1,
-                    column: 30,
-                    nodeType: "CallExpression"
-                }
-            ]
-        },
-        {
             code: "function a(err) { if (err) { obj.prop.method(err); } otherObj.prop.method() }",
             options: [["obj.prop.method", "otherObj.prop.method"]],
             errors: [
@@ -433,8 +330,8 @@ ruleTester.run("callback-return", rule, {
             ]
         },
         {
-            code: "function a(err) { if (err) { /*comment*/obj.method(err); } }",
-            options: [["obj.method"]],
+            code: "function a(err) { if (err) { var a = 1; callback(err); a++; } else { callback2(); } }",
+            options: [["callback", "callback2"]],
             errors: [
                 {
                     message: "Expected return with your callback function.",
@@ -445,37 +342,12 @@ ruleTester.run("callback-return", rule, {
             ]
         },
         {
-            code: "function a(err) { if (err) { //comment\nobj.method(err); } }",
-            options: [["obj.method"]],
-            errors: [
-                {
-                    message: "Expected return with your callback function.",
-                    line: 2,
-                    column: 1,
-                    nodeType: "CallExpression"
-                }
-            ]
-        },
-        {
-            code: "function a(err) { if (err) { obj.method(err); /*comment*/ } }",
-            options: [["obj.method"]],
+            code: "function a(err) { var a = 1; if (err) { callback(err); } a++; }",
             errors: [
                 {
                     message: "Expected return with your callback function.",
                     line: 1,
-                    column: 30,
-                    nodeType: "CallExpression"
-                }
-            ]
-        },
-        {
-            code: "function a(err) { if (err) { obj.method(err); //comment\n } }",
-            options: [["obj.method"]],
-            errors: [
-                {
-                    message: "Expected return with your callback function.",
-                    line: 1,
-                    column: 30,
+                    column: 41,
                     nodeType: "CallExpression"
                 }
             ]
