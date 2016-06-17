@@ -657,6 +657,21 @@ describe("ConfigFile", function() {
             });
         });
 
+        it("should load information from `extends` chain with relative path.", function() {
+            var config = ConfigFile.load(getFixturePath("extends-chain-2/relative.eslintrc.json"));
+
+            assert.deepEqual(config, {
+                env: {},
+                extends: "./node_modules/eslint-config-a/index.js",
+                globals: {},
+                parserOptions: {},
+                rules: {
+                    a: 2,       // from node_modules/eslint-config-a/index.js
+                    relative: 2 // from node_modules/eslint-config-a/relative.js
+                }
+            });
+        });
+
         describe("Plugins", function() {
 
             it("should load information from a YML file and load plugins", function() {
